@@ -9,9 +9,8 @@ namespace ImageWorker.Controllers
     [ApiController]
     public class WorkerController : ControllerBase
     {
-        // GET api/<WorkerController>/5
-        [HttpGet()]
-        public IActionResult Get([FromForm] IFormFile imageFile)
+        [HttpPost()]
+        public IActionResult Post([FromForm] IFormFile imageFile)
         {
             using (var stream = new MemoryStream())
             {
@@ -22,9 +21,20 @@ namespace ImageWorker.Controllers
                 // Read image that needs a watermark
                 using (var image = new MagickImage(stream))
                 {
-                    //var asd = Directory.GetFiles("Images/watermark.webp").ToString();
                     var dir = Directory.GetFileSystemEntries("/app/Images");
                     // Read the watermark that will be put on top of the image
+                    using (var watermarkShadow = new MagickImage(dir[0]))
+                    {
+                        // Draw the watermark in the bottom right corner
+                        image.Composite(watermarkShadow, Gravity.Southeast, CompositeOperator.Over);
+
+                        watermarkShadow.Shadow(0, 0, 5, new Percentage(25), new MagickColor("#000"));
+
+                        // Or draw the watermark at a specific location
+                        image.Composite(watermarkShadow, 50, 50, CompositeOperator.Over);
+
+                    }
+
                     using (var watermark = new MagickImage(dir[0]))
                     {
                         // Draw the watermark in the bottom right corner
@@ -34,7 +44,7 @@ namespace ImageWorker.Controllers
                         watermark.Evaluate(Channels.Alpha, EvaluateOperator.Divide, 4);
 
                         // Or draw the watermark at a specific location
-                        image.Composite(watermark, 200, 50, CompositeOperator.Over);
+                        image.Composite(watermark, 50, 50, CompositeOperator.Over);
                     }
 
                     using (var stream2 = new MemoryStream()) {
@@ -46,24 +56,6 @@ namespace ImageWorker.Controllers
 
 
             }
-        }
-
-        // POST api/<WorkerController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<WorkerController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<WorkerController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
         }
     }
 }
